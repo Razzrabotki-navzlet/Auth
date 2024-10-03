@@ -39,6 +39,7 @@ func GenerateJWT(email string) (string, error) {
 	return tokenString, nil
 }
 
+// GetUserByToken возвращает тип юзер для использования внутри других запросов
 func GetUserByToken(c echo.Context, db *pgx.Conn) (models.User, error) {
 	claims := &Claims{}
 	token := c.Request().Header.Get("Authorization")

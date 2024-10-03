@@ -4,6 +4,7 @@ const (
 	RegisterQuery       = `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
 	CheckPasswordQuery  = `SELECT password FROM users WHERE email = $1`
 	UpdatePasswordQuery = `UPDATE users SET password = $1 WHERE email = $2;`
+	UpdateRoleQuery     = `UPDATE users SET role = $1 WHERE id = $2`
 )
 
 type RegisterRequest struct {
@@ -20,4 +21,10 @@ type LoginRequest struct {
 type ChangePasswordRequest struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
+}
+
+type ChangeRoleRequest struct {
+	UserId      int `json:"user_id"`
+	CurrentRole int `json:"current_role"`
+	NewRole     int `json:"new_role"`
 }

@@ -8,8 +8,15 @@ type User struct {
 	Password string `json:"password"`
 }
 
+type UserResponse struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  uint8  `json:"role"`
+}
+
 const (
-	AdminRole     = 1 // Может изменять права у всех роей кроме Admin
-	ModeratorRole = 2 // Может изменять права у User
-	UserRole      = 3 // Не может изменять права
+	AdminRole   = 1
+	RaterRole   = 2
+	WatcherRole = 3
 )

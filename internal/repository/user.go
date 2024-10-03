@@ -22,7 +22,7 @@ func RegisterUser(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
 		}
 
-		_, err = db.Exec(context.Background(), RegisterQuery, req.Name, req.Email, hashedPassword, models.UserRole)
+		_, err = db.Exec(context.Background(), RegisterQuery, req.Name, req.Email, hashedPassword, models.WatcherRole)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create user"})
 		}
@@ -101,5 +101,36 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 
 		// Успешное обновление
 		return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
+	}
+}
+
+func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user, err := helpers.GetUserByToken(c, db)
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+		}
+		var userResponse = models.UserResponse{
+			ID:    user.ID,
+			Name:  user.Name,
+			Email: user.Email,
+			Role:  user.Role,
+		}
+
+		return c.JSON(http.StatusOK, userResponse)
+	}
+}
+
+func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user, err := helpers.GetUserByToken(c, db)
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+		}
+		err = helpers.SendMail("sasha_zakirov_2014@mail.ru", user.Email, "password reset", "https://google.com")
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error with sending email"})
+		}
+		return c.JSON(http.StatusOK, map[string]string{"message": "Password reset mail sent"})
 	}
 }
