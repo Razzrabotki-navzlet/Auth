@@ -60,7 +60,7 @@ func GetUserByToken(c echo.Context, db *pgx.Conn) (models.User, error) {
 		return user, echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
 	}
 
-	// Получаем userID из claims
+	// Получаем email из claims
 	email := claims.Email
 
 	// Запрос в базу данных для получения информации о пользователе

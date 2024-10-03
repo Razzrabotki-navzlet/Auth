@@ -1,10 +1,9 @@
 package repository
 
 const (
-	RegisterQuery        = `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
-	CheckPasswordQuery   = `SELECT password FROM users WHERE email = $1`
-	GetUserPasswordQuery = `SELECT password FROM users WHERE id = $1`
-	UpdatePasswordQuery  = `UPDATE users SET password = $1 WHERE id = $2;`
+	RegisterQuery       = `INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)`
+	CheckPasswordQuery  = `SELECT password FROM users WHERE email = $1`
+	UpdatePasswordQuery = `UPDATE users SET password = $1 WHERE email = $2;`
 )
 
 type RegisterRequest struct {

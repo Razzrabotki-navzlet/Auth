@@ -67,24 +67,24 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
 
-		// Получение данных из запроса (старый и новый пароль)
+		// Получение данных из запроса (старый и новый пароль) (нужно убедиться что пользователь знает старый пароль)
 		var req ChangePasswordRequest
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 		}
 
 		// Проверка на то, что старый пароль действительно принадлежит пользователю
-		var hashedPassword string
-		err = db.QueryRow(context.Background(), GetUserPasswordQuery, user.ID).Scan(&hashedPassword)
+		var oldPassword string
+		err = db.QueryRow(context.Background(), CheckPasswordQuery, user.Email).Scan(&oldPassword)
 		if err == pgx.ErrNoRows {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid old password"})
 		} else if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
 		}
 
-		// Сравнение старого пароля с хранимым в базе данных
-		if !helpers.CheckPassword(req.OldPassword, hashedPassword) {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
+		// Сравнение нового пароля с хранимым в базе данных, чтоб не совпадал
+		if helpers.CheckPassword(req.NewPassword, oldPassword) {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "New password should not repeat old password"})
 		}
 
 		// Хэширование нового пароля
@@ -94,7 +94,7 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 		}
 
 		// Обновление пароля в базе данных
-		_, err = db.Exec(context.Background(), UpdatePasswordQuery, newHashedPassword, user.ID)
+		_, err = db.Exec(context.Background(), UpdatePasswordQuery, newHashedPassword, user.Email)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
 		}
