@@ -19,7 +19,7 @@ func SendMail(from string, to string, subject, Link string) error {
 	fmt.Println(htmlContent, "htmlContent")
 	message := mail.NewSingleEmail(fromMail, subject, toEmail, plainTextContent, htmlContent)
 
-	client := sendgrid.NewSendClient("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")
+	client := sendgrid.NewSendClient("api-key")
 	response, err := client.Send(message)
 	fmt.Println(err)
 	if err != nil {
