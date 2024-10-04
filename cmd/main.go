@@ -19,7 +19,14 @@ func main() {
 	rg.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte("baklajan"), // Указываем ключ подписи
 	}))
-	dbUrl := "postgres://admin:root@localhost:5432/auth"
+	dbUrl := fmt.Sprintf("postgres://admin:root@localhost:5432/auth")
+	//dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
+	//	os.Getenv("POSTGRES_USER"),
+	//	os.Getenv("POSTGRES_PASSWORD"),
+	//	os.Getenv("POSTGRES_HOST"),
+	//	os.Getenv("POSTGRES_PORT"),
+	//	os.Getenv("POSTGRES_DB"),
+	//)
 	conn, err := pgx.Connect(context.Background(), dbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
