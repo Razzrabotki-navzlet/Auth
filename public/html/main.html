@@ -7,27 +7,37 @@
     <script src="https://unpkg.com/htmx.org"></script>
 </head>
 <body>
+<button id="logout-btn" hx-trigger="click" hx-swap="none">Выйти</button>
+
 <h1>User Information</h1>
 
 <div id="user-info" hx-get="/api/user/current" hx-trigger="load" hx-target="#user-info">
-    <!-- Здесь отобразится информация о пользователе -->
     <p>Loading user information...</p>
 </div>
 
-<script>
-    console.log("HTMX loaded:", window.htmx !== undefined); // Проверка загрузки HTMX
 
+
+<script>
     // Добавляем заголовок Authorization с токеном JWT для всех запросов HTMX
     document.addEventListener("htmx:configRequest", function(event) {
-        console.log("htmx:configRequest ОТРАБАТЫВАЕТ");
         var token = localStorage.getItem("token");
         if (token) {
-            // Убедитесь, что добавляете 'Bearer ' перед токеном
-            event.detail.headers['Authorization'] = token; // или 'Bearer ' + token;
-            console.log('Authorization header added: ' + token);
+            event.detail.headers['Authorization'] = token;
         } else {
             console.log('Token not found in localStorage');
         }
+    });
+</script>
+
+
+<script>
+    //logout script
+    document.getElementById('logout-btn').addEventListener('click', function() {
+        // Очищаем токен из localStorage
+        localStorage.removeItem('token');
+
+        // Редирект на страницу логина
+        window.location.href = "/login";
     });
 </script>
 
