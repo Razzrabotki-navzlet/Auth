@@ -132,11 +132,11 @@ func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
 
 func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		user, err := helpers.GetUserByToken(c, db)
+		_, err := helpers.GetUserByToken(c, db)
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
-		err = helpers.SendMail("sasha_zakirov_2014@mail.ru", user.Email, "password reset", "https://google.com")
+		err = helpers.SendMail()
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error with sending email"})
 		}
