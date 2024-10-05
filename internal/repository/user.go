@@ -5,6 +5,7 @@ import (
 	"auth/internal/models"
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -35,27 +36,34 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req LoginRequest
 		if err := c.Bind(&req); err != nil {
+			fmt.Println("Error binding request:", err)
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 		}
+		fmt.Println("REQUEST /home/og/projects/Auth/internal/repository/user.go", req.Email)
+
 		var hashedPassword string
 		err := db.QueryRow(context.Background(), CheckPasswordQuery, req.Email).Scan(&hashedPassword)
 		if err == sql.ErrNoRows {
+			fmt.Println("No user found with email:", req.Email)
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 		} else if err != nil {
+			fmt.Println("Error querying database:", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
 		}
 
 		if !helpers.CheckPassword(req.Password, hashedPassword) {
+			fmt.Println("Password does not match for user:", req.Email)
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 		}
 
 		token, err := helpers.GenerateJWT(req.Email)
 		if err != nil {
+			fmt.Println("Error generating JWT:", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 		}
 
+		fmt.Println("Login successful for user:", req.Email)
 		return c.JSON(http.StatusOK, map[string]string{"token": token})
-
 	}
 }
 
@@ -105,6 +113,7 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 }
 
 func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
+	fmt.Println("/home/og/projects/Auth/internal/repository/user.go", "GetUserInfoByToken LOADED")
 	return func(c echo.Context) error {
 		user, err := helpers.GetUserByToken(c, db)
 		if err != nil {

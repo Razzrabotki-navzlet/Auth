@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script> <!-- Расширение для отправки JSON -->
+</head>
+<body>
+<h1>Login</h1>
+
+<!-- Форма отправки данных в JSON формате -->
+<form hx-post="/auth/login" hx-trigger="submit" hx-target="#response" hx-swap="outerHTML" hx-ext="json-enc">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+
+    <button type="submit">Login</button>
+</form>
+
+
+<div id="response"></div>
+
+<script>
+    // загрузка страницы main после ответа
+    document.addEventListener("htmx:afterRequest", function(event) {
+        var response = event.detail.xhr.responseText;
+        try {
+            var jsonResponse = JSON.parse(response);
+            if (jsonResponse.token) {
+                // Сохраняем токен в localStorage
+                localStorage.setItem("token", "Bearer " + jsonResponse.token);
+
+                // Редирект на защищенную страницу после успешного логина
+                window.location.href = "/main"
+            } else if (jsonResponse.error) {
+                console.error("Login failed: ", jsonResponse.error);
+                document.querySelector('#response').innerHTML = '<p style="color: red;">' + jsonResponse.error + '</p>';
+            }
+        } catch (e) {
+            console.error("Error parsing JSON", e);
+        }
+    });
+</script>
+</body>
+</html>

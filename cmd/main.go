@@ -15,6 +15,11 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:7070", "http://localhost:3000"},
+		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+		AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType},
+	}))
 	rg := e.Group("/api")
 	rg.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte("baklajan"), // Указываем ключ подписи

@@ -3,6 +3,7 @@ package helpers
 import (
 	"auth/internal/models"
 	"context"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
@@ -33,9 +34,11 @@ func GenerateJWT(email string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
+		fmt.Println("Error signing token:", err)
 		return "", err
 	}
 
+	fmt.Println("JWT token generated successfully for email:", email)
 	return tokenString, nil
 }
 
@@ -78,4 +81,27 @@ func GetUserByToken(c echo.Context, db *pgx.Conn) (models.User, error) {
 	}
 
 	return user, nil
+}
+
+func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.Request().Header.Get("Authorization")
+		if len(token) > 7 && strings.HasPrefix(token, "Bearer ") {
+			token = token[7:] // Убираем "Bearer " из заголовка
+		} else {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token format"})
+		}
+
+		claims := &Claims{}
+		tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte(JWTSalt), nil
+		})
+
+		if err != nil || !tkn.Valid {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+		}
+
+		c.Set("user", claims)
+		return next(c)
+	}
 }
