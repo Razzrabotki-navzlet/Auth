@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth/internal/helpers"
 	"auth/internal/routes"
 	"context"
 	"fmt"
@@ -24,6 +25,8 @@ func main() {
 	rg.Use(echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte("baklajan"), // Указываем ключ подписи
 	}))
+	rg.Use(helpers.JWTMiddleware)
+
 	dbUrl := fmt.Sprintf("postgres://admin:root@localhost:5432/auth")
 	//dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
 	//	os.Getenv("POSTGRES_USER"),
@@ -39,6 +42,7 @@ func main() {
 	}
 	routes.AuthRoutes(e, conn, rg)
 	routes.RolesRoutes(conn, rg)
+	routes.AppRoutes(e, rg)
 	e.Logger.Fatal(e.Start(":7070"))
 	defer conn.Close(context.Background())
 }
