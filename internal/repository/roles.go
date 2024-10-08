@@ -8,6 +8,14 @@ import (
 	"net/http"
 )
 
+// @Summary      Информация о роли пользователя
+// @Security ApiKeyAuth
+// @Tags         users
+// @ID user-role
+// @Produce      json
+// @Success 200 {string} map[string]string
+// @Failure 401 {string} map[string]string
+// @Router /api/user-role [get]
 func GetUserRole(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		user, err := helpers.GetUserByToken(c, db)
@@ -18,6 +26,18 @@ func GetUserRole(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
+// @Summary      Изменение роли пользователя
+// @Security ApiKeyAuth
+// @Tags         users
+// @ID change-user-role
+// @Accept       json
+// @Produce      json
+// @Param input body ChangeRoleRequest true "user info"
+// @Success 200 {string} map[string]string
+// @Failure 400 {string} map[string]string
+// @Failure 401 {string} map[string]strin
+// @Failure 500 {string} map[string]string
+// @Router /api/update-user-role [put]
 func UpdateUserRole(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		_, err := helpers.GetUserByToken(c, db)

@@ -1,2 +1,2 @@
-# Auth
-authorization service
+Сервис авторизации.\
+Для запуска - установите docker.

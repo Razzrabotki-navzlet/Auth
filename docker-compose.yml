@@ -9,8 +9,7 @@ services:
       - "7070:7070"
     environment:
       POSTGRES_HOST: db
-#      POSTGRES_PORT: 5432
-      POSTGRES_PORT: 5433
+      POSTGRES_PORT: 5432 # Порт внутри контейнера
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: root
       POSTGRES_DB: auth
@@ -26,8 +25,7 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: auth
     ports:
-#      - "5432:5432"
-      - "5433:5433"
+      - "5505:5505" # Порт 5433 на хосте, 5432 внутри контейнера
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:

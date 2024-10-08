@@ -11,6 +11,17 @@ import (
 	"net/http"
 )
 
+// @Summary      Регистрация
+// @Description  Создание пользователя
+// @Tags         users
+// @ID register-user
+// @Accept       json
+// @Produce      json
+// @Param input body RegisterRequest true "user info"
+// @Success 200 {string} map[string]string
+// @Failure 400 {string} map[string]string
+// @Failure 500 {string} map[string]string
+// @Router /auth/create-user [post]
 func RegisterUser(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req RegisterRequest
@@ -32,6 +43,18 @@ func RegisterUser(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
+// @Summary      Логин
+// @Description  Получение JWT
+// @Tags         users
+// @ID login-user
+// @Accept       json
+// @Produce      json
+// @Param input body LoginRequest true "user info"
+// @Success 200 {string} map[string]string
+// @Failure 400 {string} map[string]string
+// @Failure 401 {string} map[string]string
+// @Failure 500 {string} map[string]string
+// @Router /auth/login [post]
 func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req LoginRequest
@@ -67,6 +90,18 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
+// @Summary      Смена пароля
+// @Security ApiKeyAuth
+// @Tags         users
+// @ID password-change
+// @Accept       json
+// @Producea      json
+// @Param input body ChangePasswordRequest true "Ols and new passwords"
+// @Success 200 {string} map[string]string
+// @Failure 400 {string} map[string]string
+// @Failure 401 {string} map[string]string
+// @Failure 500 {string} map[string]string
+// @Router /api/user/change-password [put]
 func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Получение информации о пользователе
@@ -112,6 +147,16 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
+// @Summary      Информация о пользователе
+// @Security ApiKeyAuth
+// @Description  Получение информации о текущем пользователе по токену
+// @Tags         users
+// @ID info-user
+// @Produce      json
+// @Success 200 {string} map[string]string
+// @Failure 400 {string} map[string]string
+// @Failure 401 {string} map[string]string
+// @Router /api/user/current [get]
 func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
 	fmt.Println("/home/og/projects/Auth/internal/repository/user.go", "GetUserInfoByToken LOADED")
 	return func(c echo.Context) error {
@@ -130,16 +175,16 @@ func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
-func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		_, err := helpers.GetUserByToken(c, db)
-		if err != nil {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
-		}
-		err = helpers.SendMail()
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error with sending email"})
-		}
-		return c.JSON(http.StatusOK, map[string]string{"message": "Password reset mail sent"})
-	}
-}
+//func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
+//	return func(c echo.Context) error {
+//		_, err := helpers.GetUserByToken(c, db)
+//		if err != nil {
+//			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+//		}
+//		err = helpers.SendMail()
+//		if err != nil {
+//			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error with sending email"})
+//		}
+//		return c.JSON(http.StatusOK, map[string]string{"message": "Password reset mail sent"})
+//	}
+//}

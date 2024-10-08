@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "auth/docs"
 	"auth/internal/helpers"
 	"auth/internal/routes"
 	"context"
@@ -9,11 +10,24 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"os"
 )
 
+// @title           API
+// @version         123.123
+// @description     This is a sample API documentation using Swagger.
+
+// @host      localhost:7070
+// @BasePath  /
+
+//@securityDefinitions.apikey ApiKeyAuth
+//@in header
+//@name Authorization
+
 func main() {
 	e := echo.New()
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
@@ -40,6 +54,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
+
 	routes.AuthRoutes(e, conn, rg)
 	routes.RolesRoutes(conn, rg)
 	routes.AppRoutes(e, rg)
