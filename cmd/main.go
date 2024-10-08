@@ -11,6 +11,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
+	"html/template"
+	"io"
+	"net/http"
 	"os"
 )
 
@@ -21,12 +24,25 @@ import (
 // @host      localhost:7070
 // @BasePath  /
 
-//@securityDefinitions.apikey ApiKeyAuth
-//@in header
-//@name Authorization
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+// TemplateRenderer - это структура для работы с шаблонами
+type TemplateRenderer struct {
+	templates *template.Template
+}
+
+// Render рендерит шаблон с переданными данными
+func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
 
 func main() {
 	e := echo.New()
+	renderer := &TemplateRenderer{
+		templates: template.Must(template.ParseGlob("public/html/*.html")),
+	}
+	e.Renderer = renderer
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -34,6 +50,16 @@ func main() {
 		AllowOrigins: []string{"http://localhost:7070", "http://localhost:3000"},
 		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
 		AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType},
+	}))
+	e.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup:    "header:" + echo.HeaderXCSRFToken,
+		TokenLength:    32,
+		CookieName:     "_csrf",
+		ContextKey:     "csrf",
+		CookiePath:     "/",
+		CookieHTTPOnly: true,
+		CookieMaxAge:   86400,
+		CookieSameSite: http.SameSiteStrictMode,
 	}))
 	rg := e.Group("/api")
 	rg.Use(echojwt.WithConfig(echojwt.Config{

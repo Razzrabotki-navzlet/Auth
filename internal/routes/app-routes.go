@@ -2,22 +2,25 @@ package routes
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"html/template"
+	"net/http"
 )
 
 func AppRoutes(e *echo.Echo, rg *echo.Group) {
-	e.GET("/login", ServeLoginPage)
-	e.GET("/main", ServeMainPage)
-	e.GET("/password-change", ServePasswordChangePage)
+	e.GET("/login", RenderPage("login.html"))
+	e.GET("/main", RenderPage("main.html"))
+	e.GET("/password-change", RenderPage("password-change.html"))
 }
 
-func ServeLoginPage(c echo.Context) error {
-	return c.File("public/html/login.html")
-}
-
-func ServeMainPage(c echo.Context) error {
-	return c.File("public/html/main.html")
-}
-
-func ServePasswordChangePage(c echo.Context) error {
-	return c.File("public/html/password-change.html")
+func RenderPage(templateName string) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		csrfToken := c.Get(middleware.DefaultCSRFConfig.ContextKey).(string)
+		userInput := c.QueryParam("input")
+		safeOutput := template.HTMLEscapeString(userInput)
+		return c.Render(http.StatusOK, templateName, map[string]interface{}{
+			"csrf_token": csrfToken,
+			"output":     safeOutput,
+		})
+	}
 }
