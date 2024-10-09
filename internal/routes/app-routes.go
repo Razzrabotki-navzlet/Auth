@@ -11,6 +11,7 @@ func AppRoutes(e *echo.Echo, rg *echo.Group) {
 	e.GET("/login", RenderPage("login.html"))
 	e.GET("/main", RenderPage("main.html"))
 	e.GET("/password-change", RenderPage("password-change.html"))
+
 }
 
 func RenderPage(templateName string) echo.HandlerFunc {

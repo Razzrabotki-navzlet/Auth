@@ -39,7 +39,19 @@ func RegisterUser(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create user"})
 		}
 
-		return c.JSON(http.StatusOK, map[string]string{"message": "User created successfully"})
+		token, err := helpers.GenerateConfirmationJWT(req.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate confirmation token"})
+		}
+
+		confirmationLink := fmt.Sprintf("http://localhost:7070/user/confirm?token=%s", token)
+
+		err = helpers.SendMail([]string{req.Email}, "Email Confirmation", "Please confirm your email by clicking the following link: "+confirmationLink)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to send confirmation email"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"message": "User created successfully. Please check your email to confirm your account."})
 	}
 }
 
@@ -62,10 +74,13 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 			fmt.Println("Error binding request:", err)
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 		}
-		fmt.Println("REQUEST /home/og/projects/Auth/internal/repository/user.go", req.Email)
-
+		isVerified := false
+		err := db.QueryRow(context.Background(), CheckVerify, req.Email).Scan(&isVerified)
+		if !isVerified {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "You should verify your account (check mail)"})
+		}
 		var hashedPassword string
-		err := db.QueryRow(context.Background(), CheckPasswordQuery, req.Email).Scan(&hashedPassword)
+		err = db.QueryRow(context.Background(), CheckPasswordQuery, req.Email).Scan(&hashedPassword)
 		if err == sql.ErrNoRows {
 			fmt.Println("No user found with email:", req.Email)
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})

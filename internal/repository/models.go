@@ -5,6 +5,7 @@ const (
 	CheckPasswordQuery  = `SELECT password FROM users WHERE email = $1`
 	UpdatePasswordQuery = `UPDATE users SET password = $1 WHERE email = $2;`
 	UpdateRoleQuery     = `UPDATE users SET role = $1 WHERE id = $2`
+	CheckVerify         = `SELECT is_verified FROM users WHERE email = $1`
 )
 
 type RegisterRequest struct {

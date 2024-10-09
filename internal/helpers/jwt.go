@@ -42,20 +42,17 @@ func GenerateJWT(email string) (string, error) {
 	return tokenString, nil
 }
 
-// GetUserByToken возвращает тип юзер для использования внутри других запросов
 func GetUserByToken(c echo.Context, db *pgx.Conn) (models.User, error) {
 	claims := &Claims{}
 	token := c.Request().Header.Get("Authorization")
 	var user models.User
 
-	// Проверка формата токена
 	if len(token) > 7 && strings.HasPrefix(token, "Bearer ") {
 		token = token[7:]
 	} else {
 		return user, echo.NewHTTPError(http.StatusUnauthorized, "Invalid token format")
 	}
 
-	// Валидация и декодирование токена
 	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte("baklajan"), nil
 	})
@@ -64,10 +61,8 @@ func GetUserByToken(c echo.Context, db *pgx.Conn) (models.User, error) {
 		return user, echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
 	}
 
-	// Получаем email из claims
 	email := claims.Email
 
-	// Запрос в базу данных для получения информации о пользователе
 	err = db.QueryRow(context.Background(), GetInfoByTokenQuery, email).Scan(
 		&user.ID,
 		&user.Name,
@@ -103,5 +98,46 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		c.Set("user", claims)
 		return next(c)
+	}
+}
+
+func GenerateConfirmationJWT(email string) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Email: email,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		fmt.Println("Error signing token:", err)
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func ConfirmEmail(db *pgx.Conn) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.QueryParam("token")
+		claims := &Claims{}
+
+		tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte(JWTSalt), nil
+		})
+
+		if err != nil || !tkn.Valid {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or expired token"})
+		}
+
+		_, err = db.Exec(context.Background(), "UPDATE users SET is_verified=true WHERE email=$1", claims.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to activate user"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"message": "Email confirmed successfully"})
 	}
 }

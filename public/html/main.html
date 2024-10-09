@@ -5,19 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Main Page</title>
     <script src="https://unpkg.com/htmx.org"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #user-info {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            width: 300px;
+            text-align: center;
+        }
+
+        #user-info p {
+            color: #555;
+            font-size: 16px;
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #logout-btn {
+            background-color: #dc3545;
+        }
+
+        #logout-btn:hover {
+            background-color: #c82333;
+        }
+
+        #reset-password-btn {
+            background-color: #28a745;
+        }
+
+        #reset-password-btn:hover {
+            background-color: #218838;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            #user-info {
+                width: 100%;
+            }
+
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+    </style>
 </head>
 <body>
+
 <button id="logout-btn" hx-trigger="click" hx-swap="none">Выйти</button>
 <button id="password-change-btn" hx-trigger="click" hx-swap="none">Сменить пароль</button>
 
 <h1>User Information</h1>
 
-<div id="user-info" hx-get="/api/user/current" hx-trigger="load" hx-target="#user-info">
+<div id="user-info">
     <p>Loading user information...</p>
 </div>
 
 <button id="reset-password-btn" hx-get="api/user/reset-password" hx-trigger="click" hx-swap="none">Сбросить пароль</button>
-
 
 <script>
     var csrfToken = '{{ .csrf_token }}';
@@ -32,20 +118,41 @@
             console.log('Token not found in localStorage');
         }
     });
+
+    // Загружаем и отображаем информацию о пользователе
+    document.addEventListener("DOMContentLoaded", function() {
+        var userInfoDiv = document.getElementById('user-info');
+
+        fetch('/api/user/current', {
+            headers: {
+                'Authorization': localStorage.getItem('token')
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                userInfoDiv.innerHTML = `
+                <p><strong>ID:</strong> ${data.id}</p>
+                <p><strong>Name:</strong> ${data.name}</p>
+                <p><strong>Email:</strong> ${data.email}</p>
+                <p><strong>Role:</strong> ${data.role}</p>
+            `;
+            })
+            .catch(error => {
+                userInfoDiv.innerHTML = '<p>Error loading user information</p>';
+                console.error('Error:', error);
+            });
+    });
 </script>
 
-
 <script>
-    //logout script
+    // Логика выхода из системы
     document.getElementById('logout-btn').addEventListener('click', function() {
-        // Очищаем токен из localStorage
         localStorage.removeItem('token');
-
-        // Редирект на страницу логина
         window.location.href = "/login";
     });
+
+    // Переход на смену пароля
     document.getElementById('password-change-btn').addEventListener('click', function() {
-        // Редирект на страницу логина
         window.location.href = "/password-change";
     });
 </script>
