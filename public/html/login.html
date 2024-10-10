@@ -107,7 +107,8 @@
 <!--reg input validation-->
 <script>
     document.addEventListener('htmx:beforeRequest', function(event) {
-        const emailInput = document.getElementById('reg_email').value;
+        if (event.target.id === 'registerForm') {
+            const emailInput = document.getElementById('reg_email').value;
         const passwordInput = document.getElementById('reg_password').value;
         const confirmPasswordInput = document.getElementById('reg_password_confirm').value;
         const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
@@ -122,6 +123,7 @@
         if (!isPasswordValid) {
             event.preventDefault();
             document.getElementById('reg_password_error').textContent = "Passwords don't match"
+        }
         }
     });
 </script>
