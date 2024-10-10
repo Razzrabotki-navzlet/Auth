@@ -13,5 +13,6 @@ func AuthRoutes(e *echo.Echo, dbConn *pgx.Conn, rg *echo.Group) {
 	e.GET("/user/confirm", helpers.ConfirmEmail(dbConn))
 	rg.PUT("/user/change-password", repository.ChangePassword(dbConn))
 	rg.GET("/user/current", repository.GetUserInfoByToken(dbConn))
-	//rg.GET("/user/reset-password", repository.ResetPassword(dbConn))
+	rg.PUT("/user/reset-password", repository.ResetPassword(dbConn))
+	rg.GET("/user/send-reset-password-link", repository.SendResetPasswordLink(dbConn))
 }

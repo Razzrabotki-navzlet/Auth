@@ -59,11 +59,11 @@ func main() {
 		CookiePath:     "/",
 		CookieHTTPOnly: true,
 		CookieMaxAge:   86400,
-		CookieSameSite: http.SameSiteStrictMode,
+		CookieSameSite: http.SameSiteLaxMode,
 	}))
 	rg := e.Group("/api")
 	rg.Use(echojwt.WithConfig(echojwt.Config{
-		SigningKey: []byte("baklajan"), // Указываем ключ подписи
+		SigningKey: []byte(helpers.JWTSalt), // Указываем ключ подписи
 	}))
 	rg.Use(helpers.JWTMiddleware)
 

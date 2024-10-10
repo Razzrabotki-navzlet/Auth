@@ -103,7 +103,7 @@
     <p>Loading user information...</p>
 </div>
 
-<button id="reset-password-btn" hx-get="api/user/reset-password" hx-trigger="click" hx-swap="none">Сбросить пароль</button>
+<button id="reset-password-btn" hx-get="/api/user/send-reset-password-link" hx-trigger="click" hx-swap="outerHTML">Сбросить пароль</button>
 
 <script>
     var csrfToken = '{{ .csrf_token }}';

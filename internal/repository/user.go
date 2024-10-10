@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -190,16 +191,62 @@ func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
-//func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
-//	return func(c echo.Context) error {
-//		_, err := helpers.GetUserByToken(c, db)
-//		if err != nil {
-//			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
-//		}
-//		err = helpers.SendMail()
-//		if err != nil {
-//			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Error with sending email"})
-//		}
-//		return c.JSON(http.StatusOK, map[string]string{"message": "Password reset mail sent"})
-//	}
-//}
+func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		var req ResetPasswordRequest
+		if err := c.Bind(&req); err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
+		}
+
+		if req.NewPassword != req.ConfirmPassword {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Passwords do not match"})
+		}
+
+		claims := &helpers.Claims{}
+		fmt.Println("Received token:", req.Token)
+		tkn, err := jwt.ParseWithClaims(req.Token, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte(helpers.JWTSalt), nil
+		})
+
+		if err != nil || !tkn.Valid {
+			fmt.Println("Token:", tkn)
+			fmt.Println("ERROR:", err)
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or expired token"})
+		}
+
+		hashedPassword, err := helpers.HashPassword(req.NewPassword)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
+		}
+
+		_, err = db.Exec(context.Background(), "UPDATE users SET password = $1 WHERE email = $2", hashedPassword, claims.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"message": "Password reset successfully"})
+	}
+}
+
+func SendResetPasswordLink(db *pgx.Conn) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		user, err := helpers.GetUserByToken(c, db)
+		if err != nil {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
+		}
+		token, err := helpers.GenerateJWT(user.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate reset token"})
+		}
+
+		resetLink := fmt.Sprintf("http://localhost:7070/password-reset?token=%s", token)
+		body := fmt.Sprintf("Для сброса пароля перейдите по ссылке: %s", resetLink)
+		err = helpers.SendMail([]string{user.Email}, "Сброс пароля", body)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to send email"})
+		}
+
+		return c.JSON(http.StatusOK, map[string]string{"message": "Reset password link sent to your email"})
+	}
+}

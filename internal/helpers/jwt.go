@@ -54,7 +54,7 @@ func GetUserByToken(c echo.Context, db *pgx.Conn) (models.User, error) {
 	}
 
 	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("baklajan"), nil
+		return []byte(JWTSalt), nil
 	})
 
 	if err != nil || !tkn.Valid {

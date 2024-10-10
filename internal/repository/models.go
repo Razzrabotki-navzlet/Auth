@@ -24,6 +24,12 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
+type ResetPasswordRequest struct {
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+	Token           string `json:"token"`
+}
+
 type ChangeRoleRequest struct {
 	UserId      int `json:"user_id"`
 	CurrentRole int `json:"current_role"`
