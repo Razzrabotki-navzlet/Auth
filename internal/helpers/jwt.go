@@ -18,14 +18,16 @@ const GetInfoByTokenQuery = `SELECT id, name, email, role, password FROM users W
 var jwtKey = []byte(JWTSalt)
 
 type Claims struct {
-	Email string `json:"email"`
+	Email  string `json:"email"`
+	UserId int    `json:"userId"`
 	jwt.StandardClaims
 }
 
-func GenerateJWT(email string) (string, error) {
+func GenerateJWT(email string, userId int) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour) // Токен будет действителен 24 часа
 	claims := &Claims{
-		Email: email,
+		Email:  email,
+		UserId: userId,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -87,7 +89,7 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token format"})
 		}
 
-		claims := &Claims{}
+		claims := &Claims{} // Предполагается, что структура Claims содержит user_id
 		tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(JWTSalt), nil
 		})
@@ -96,7 +98,14 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
 
-		c.Set("user", claims)
+		// Извлечение user_id из claims и сохранение его в контексте Echo
+		userID := claims.UserId // Предполагается, что claims содержит поле UserID
+		if userID == 0 {
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User ID not found in token"})
+		}
+
+		c.Set("user_id", userID) // Сохраняем user_id в контекст Echo
+
 		return next(c)
 	}
 }

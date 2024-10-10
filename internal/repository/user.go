@@ -85,7 +85,8 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusForbidden, map[string]string{"error": "You should verify your account (check mail)"})
 		}
 		var hashedPassword string
-		err = db.QueryRow(context.Background(), CheckPasswordQuery, req.Email).Scan(&hashedPassword)
+		var userId int
+		err = db.QueryRow(context.Background(), CheckPasswordQuery, req.Email).Scan(&userId, &hashedPassword)
 		if err == sql.ErrNoRows {
 			fmt.Println("No user found with email:", req.Email)
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
@@ -99,7 +100,7 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 		}
 
-		token, err := helpers.GenerateJWT(req.Email)
+		token, err := helpers.GenerateJWT(req.Email, userId) // Передаем userID в JWT
 		if err != nil {
 			fmt.Println("Error generating JWT:", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
@@ -138,10 +139,14 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 
 		// Проверка на то, что старый пароль действительно принадлежит пользователю
 		var oldPassword string
-		err = db.QueryRow(context.Background(), CheckPasswordQuery, user.Email).Scan(&oldPassword)
+		var Id int
+		err = db.QueryRow(context.Background(), CheckPasswordQuery, user.Email).Scan(&Id, &oldPassword)
 		if err == pgx.ErrNoRows {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid old password"})
 		} else if err != nil {
+			fmt.Println("ZZZZZZ")
+			fmt.Println(err)
+
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
 		}
 
@@ -261,7 +266,7 @@ func SendResetPasswordLink(db *pgx.Conn) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
-		token, err := helpers.GenerateJWT(user.Email)
+		token, err := helpers.GenerateJWT(user.Email, user.ID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate reset token"})
 		}

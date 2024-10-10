@@ -3,6 +3,7 @@ package main
 import (
 	_ "auth/docs"
 	"auth/internal/helpers"
+	localMidleware "auth/internal/middleware"
 	"auth/internal/routes"
 	"context"
 	"fmt"
@@ -80,10 +81,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-
+	rg.Use(localMidleware.LogRequestMiddleware(conn))
 	routes.AuthRoutes(e, conn, rg)
 	routes.RolesRoutes(conn, rg)
 	routes.AppRoutes(e, rg)
+	routes.LogRoutes(conn, rg)
 	e.Logger.Fatal(e.Start(":7070"))
 	defer conn.Close(context.Background())
 }

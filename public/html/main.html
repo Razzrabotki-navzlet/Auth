@@ -93,10 +93,11 @@
     </style>
 </head>
 <body>
-
+<div id="button-container">
 <button id="logout-btn" hx-trigger="click" hx-swap="none">Выйти</button>
 <button id="password-change-btn" hx-trigger="click" hx-swap="none">Сменить пароль</button>
 <button id="reset-password-btn" hx-get="/api/user/send-reset-password-link" hx-trigger="click" hx-swap="outerHTML">Сбросить пароль</button>
+</div>
 
 <h1>User Information</h1>
 
@@ -114,6 +115,13 @@
                 switch (userData.role) {
                     case 1:
                         roleText = "Admin";
+                        const buttonContainer = document.getElementById('button-container');
+                        const adminButton = document.createElement('button');
+                        adminButton.id = 'admin-panel-btn';
+                        adminButton.setAttribute('hx-trigger', 'click');
+                        adminButton.setAttribute('hx-swap', 'none');
+                        adminButton.textContent = 'Панель администратора';
+                        buttonContainer.appendChild(adminButton);
                         break;
                     case 2:
                         roleText = "Rater";
