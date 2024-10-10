@@ -96,6 +96,7 @@
 
 <button id="logout-btn" hx-trigger="click" hx-swap="none">Выйти</button>
 <button id="password-change-btn" hx-trigger="click" hx-swap="none">Сменить пароль</button>
+<button id="reset-password-btn" hx-get="/api/user/send-reset-password-link" hx-trigger="click" hx-swap="outerHTML">Сбросить пароль</button>
 
 <h1>User Information</h1>
 
@@ -103,9 +104,38 @@
     <p>Loading user information...</p>
 </div>
 
-<button id="reset-password-btn" hx-get="/api/user/send-reset-password-link" hx-trigger="click" hx-swap="outerHTML">Сбросить пароль</button>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Получаем информацию о пользователе через HTMX с API
+        htmx.ajax('GET', '/api/user/current', {handler:function(elt, info) {
+                var userData = JSON.parse(info.xhr.responseText); // Обрабатываем JSON-ответ
+                var roleText;
+                switch (userData.role) {
+                    case 1:
+                        roleText = "Admin";
+                        break;
+                    case 2:
+                        roleText = "Rater";
+                        break;
+                    case 3:
+                        roleText = "Watcher";
+                        break;
+                    default:
+                        roleText = "Unknown";
+                }
+
+                // Рендерим информацию о пользователе
+                var userInfoDiv = document.getElementById('user-info');
+                userInfoDiv.innerHTML = `
+                <p><strong>ID:</strong> ${userData.id}</p>
+                <p><strong>Name:</strong> ${userData.name}</p>
+                <p><strong>Email:</strong> ${userData.email}</p>
+                <p><strong>Role:</strong> ${roleText}</p>
+            `;
+            }});
+    });
+
     var csrfToken = '{{ .csrf_token }}';
 
     // Добавляем заголовок Authorization с токеном JWT для всех запросов HTMX
@@ -119,39 +149,15 @@
         }
     });
 
-    // Загружаем и отображаем информацию о пользователе
-    document.addEventListener("DOMContentLoaded", function() {
-        var userInfoDiv = document.getElementById('user-info');
 
-        fetch('/api/user/current', {
-            headers: {
-                'Authorization': localStorage.getItem('token')
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                userInfoDiv.innerHTML = `
-                <p><strong>ID:</strong> ${data.id}</p>
-                <p><strong>Name:</strong> ${data.name}</p>
-                <p><strong>Email:</strong> ${data.email}</p>
-                <p><strong>Role:</strong> ${data.role}</p>
-            `;
-            })
-            .catch(error => {
-                userInfoDiv.innerHTML = '<p>Error loading user information</p>';
-                console.error('Error:', error);
-            });
-    });
 </script>
 
 <script>
-    // Логика выхода из системы
     document.getElementById('logout-btn').addEventListener('click', function() {
         localStorage.removeItem('token');
         window.location.href = "/login";
     });
 
-    // Переход на смену пароля
     document.getElementById('password-change-btn').addEventListener('click', function() {
         window.location.href = "/password-change";
     });

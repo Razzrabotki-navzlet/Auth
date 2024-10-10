@@ -30,6 +30,10 @@ func RegisterUser(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 		}
 
+		if req.Password != req.PasswordConfirm {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Passwords don't match"})
+		}
+
 		hashedPassword, err := helpers.HashPassword(req.Password)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash password"})
@@ -111,7 +115,7 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 // @Tags         users
 // @ID password-change
 // @Accept       json
-// @Producea      json
+// @Produce     json
 // @Param input body ChangePasswordRequest true "Ols and new passwords"
 // @Success 200 {string} map[string]string
 // @Failure 400 {string} map[string]string
@@ -191,9 +195,21 @@ func GetUserInfoByToken(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
+// @Summary      Сброс пароля
+// @Security ApiKeyAuth
+// @Description  Сброс пароля происходит через токен в запросе (токен генерируется в ссылке, которая отправляется на почту)
+// @Tags         users
+// @ID reset-password
+// @Accept       json
+// @Produce      json
+// @Param input body ResetPasswordRequest true "New password with confirmation and reset token"
+// @Success 200 {string} map[string]string
+// @Failure 400 {string} map[string]string
+// @Failure 401 {string} map[string]string
+// @Failure 500 {string} map[string]string
+// @Router /api/user/reset-password [put]
 func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
-
 		var req ResetPasswordRequest
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
@@ -229,6 +245,16 @@ func ResetPassword(db *pgx.Conn) echo.HandlerFunc {
 	}
 }
 
+// @Summary      Отправка письма со сбросом пароля на почту
+// @Security ApiKeyAuth
+// @Description Почту пользователя получаем через токен
+// @Tags         users
+// @ID reset-password-link
+// @Produce      json
+// @Success 200 {string} map[string]string
+// @Failure 401 {string} map[string]string
+// @Failure 500 {string} map[string]string
+// @Router /api/user/send-reset-password-link [get]
 func SendResetPasswordLink(db *pgx.Conn) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		user, err := helpers.GetUserByToken(c, db)
