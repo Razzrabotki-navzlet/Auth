@@ -54,7 +54,6 @@ func ChangeUserRole(dbConn *pgx.Conn) echo.HandlerFunc {
 			NewRole string `json:"new_role"`
 		}
 
-		// Попробуем привязать данные из запроса
 		if err := c.Bind(&req); err != nil {
 			fmt.Println(err)
 			return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})

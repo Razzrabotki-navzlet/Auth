@@ -16,7 +16,6 @@ import (
 func AdminMiddleware(dbConn *pgx.Conn) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Получаем токен из заголовка
 			token := c.Request().Header.Get("Authorization")
 			if len(token) > 7 && strings.HasPrefix(token, "Bearer ") {
 				token = token[7:] // Убираем "Bearer " из заголовка
@@ -32,19 +31,16 @@ func AdminMiddleware(dbConn *pgx.Conn) echo.MiddlewareFunc {
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 			}
 
-			// Проверяем роль пользователя в базе данных
 			var role int
 			err = dbConn.QueryRow(context.Background(), "SELECT role FROM users WHERE id=$1", claims.UserId).Scan(&role)
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User not found"})
 			}
 
-			// Проверяем, является ли пользователь администратором
-			if role != 1 { // 1 - это ID роли администратора
+			if role != 1 {
 				return c.JSON(http.StatusForbidden, map[string]string{"error": "Access denied"})
 			}
 
-			// Если все проверки прошли, вызываем следующий обработчик
 			return next(c)
 		}
 	}
