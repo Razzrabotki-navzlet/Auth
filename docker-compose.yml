@@ -9,7 +9,7 @@ services:
       - "1111:1111"  # Порт для приложения
     environment:
       POSTGRES_HOST: db
-      POSTGRES_PORT: 3333  # Порт базы данных внутри контейнера
+      POSTGRES_PORT: 5432  # Порт базы данных внутри контейнера
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: root
       POSTGRES_DB: auth
@@ -25,10 +25,10 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: auth
     ports:
-      - "3333:5432"  # Порт для базы данных (3333 на хосте, 5432 внутри контейнера)
+      - "3333:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Скрипт инициализации базы данных
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - auth-network
 

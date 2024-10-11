@@ -48,7 +48,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:7070", "http://localhost:3000"},
+		AllowOrigins: []string{"http://localhost:7070", "http://localhost:1111"},
 		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
 		AllowHeaders: []string{echo.HeaderAuthorization, echo.HeaderContentType},
 	}))
@@ -68,14 +68,14 @@ func main() {
 	}))
 	rg.Use(helpers.JWTMiddleware)
 
-	dbUrl := fmt.Sprintf("postgres://admin:root@localhost:5432/auth")
-	//dbUrl := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-	//	os.Getenv("POSTGRES_USER"),
-	//	os.Getenv("POSTGRES_PASSWORD"),
-	//	os.Getenv("POSTGRES_HOST"),
-	//	os.Getenv("POSTGRES_PORT"),
-	//	os.Getenv("POSTGRES_DB"),
-	//)
+	//dbUrl := fmt.Sprintf("postgres://admin:root@localhost:5432/auth")
+	dbUrl := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_DB"))
+
 	conn, err := pgx.Connect(context.Background(), dbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
