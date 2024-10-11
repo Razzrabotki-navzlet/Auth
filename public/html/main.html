@@ -108,9 +108,8 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Получаем информацию о пользователе через HTMX с API
         htmx.ajax('GET', '/api/user/current', {handler:function(elt, info) {
-                var userData = JSON.parse(info.xhr.responseText); // Обрабатываем JSON-ответ
+                var userData = JSON.parse(info.xhr.responseText);
                 var roleText;
                 switch (userData.role) {
                     case 1:
@@ -121,6 +120,9 @@
                         adminButton.setAttribute('hx-trigger', 'click');
                         adminButton.setAttribute('hx-swap', 'none');
                         adminButton.textContent = 'Панель администратора';
+                        adminButton.addEventListener('click', function() {
+                            window.location.href = "/admin-panel";
+                        });
                         buttonContainer.appendChild(adminButton);
                         break;
                     case 2:
@@ -145,8 +147,6 @@
     });
 
     var csrfToken = '{{ .csrf_token }}';
-
-    // Добавляем заголовок Authorization с токеном JWT для всех запросов HTMX
     document.addEventListener("htmx:configRequest", function(event) {
         event.detail.headers['X-CSRF-Token'] = csrfToken;
         var token = localStorage.getItem("token");

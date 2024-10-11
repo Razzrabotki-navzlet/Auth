@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,11 +35,13 @@
     </style>
 </head>
 <body>
+<button id="main-btn" hx-trigger="click" hx-swap="none">Меню</button>
 
 <h1>Admin Panel</h1>
 
 <div class="section" id="logs-section">
     <h2>Просмотр логов</h2>
+    <button hx-get="/api/admin/logs" hx-trigger="click" hx-target="#logs-table-body" hx-swap="innerHTML">Загрузить логи</button>
     <table id="logs-table">
         <thead>
         <tr>
@@ -49,122 +53,95 @@
             <th>Created At</th>
         </tr>
         </thead>
-        <tbody>
-        <!-- Моки данных для логов -->
+        <tbody id="logs-table-body">
         <tr>
-            <td>1</td>
-            <td>101</td>
-            <td>GET</td>
-            <td>/api/users</td>
-            <td>200</td>
-            <td>2024-10-11 12:30:45</td>
-        </tr>
-        <tr>
-            <td>2</td>
-            <td>102</td>
-            <td>POST</td>
-            <td>/api/login</td>
-            <td>401</td>
-            <td>2024-10-11 12:31:12</td>
+            <td colspan="6">Нажмите кнопку, чтобы загрузить логи</td>
         </tr>
         </tbody>
     </table>
 </div>
+<h3>Change User Role</h3>
+<form id="change-role-form" onsubmit="changeUserRole(event)">
+    <div>
+        <label for="user-id">User ID:</label>
+        <input id="user-id" name="user_id" required>
+    </div>
+    <div>
+        <label for="new-role">New Role:</label>
+        <select id="new-role" name="new_role" required>
+            <option value="1">Admin</option>
+            <option value="2">Rater</option>
+            <option value="3">Watcher</option>
+        </select>
+    </div>
+    <button type="submit">Change Role</button>
+</form>
 
-<!-- Секция просмотра списка пользователей -->
-<div class="section" id="users-section">
-    <h2>Список пользователей</h2>
-    <table id="users-table">
-        <thead>
-        <tr>
-            <th>User ID</th>
-            <th>Email</th>
-            <th>Role</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-            <td>101</td>
-            <td>admin@example.com</td>
-            <td>Admin</td>
-        </tr>
-        <tr>
-            <td>102</td>
-            <td>rater@example.com</td>
-            <td>Rater</td>
-        </tr>
-        <tr>
-            <td>103</td>
-            <td>watcher@example.com</td>
-            <td>Watcher</td>
-        </tr>
-        </tbody>
-    </table>
-</div>
+<div id="role-update-response"></div>
+<h2>User List</h2>
+<table id="user-list">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+    </tr>
+    </thead>
+    <tbody id="user-list-body" hx-get="/api/admin/users" hx-trigger="load" hx-target="#user-list-body" hx-swap="outerHTML">
+    </tbody>
+</table>
 
 <script>
-    const logs = [
-        { id: 1, user_id: 101, method: 'GET', path: '/api/users', status_code: 200, created_at: '2024-10-11 12:30:45' },
-        { id: 2, user_id: 102, method: 'POST', path: '/api/login', status_code: 401, created_at: '2024-10-11 12:31:12' }
-    ];
-    const users = [
-        { id: 101, email: 'admin@example.com', role: 1 },
-        { id: 102, email: 'rater@example.com', role: 2 },
-        { id: 103, email: 'watcher@example.com', role: 3 }
-    ];
-    function getRoleText(role) {
-        switch (role) {
-            case 1:
-                return 'Admin';
-            case 2:
-                return 'Rater';
-            case 3:
-                return 'Watcher';
-            default:
-                return 'Unknown';
+    var csrfToken = '{{ .csrf_token }}';
+
+    async function changeUserRole(event) {
+        event.preventDefault();
+        const userId = document.getElementById('user-id').value;
+        const newRole = document.getElementById('new-role').value;
+        const token = localStorage.getItem("token");
+        try {
+            const response = await fetch('/api/admin/change-role', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                    'Authorization': token ? token : ''
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    new_role: newRole
+                })
+            });
+            const responseData = await response.json();
+            const responseDiv = document.getElementById('role-update-response');
+            responseDiv.innerHTML = '';
+            if (response.ok) {
+                responseDiv.innerHTML = `<div class="success-message">${responseData.message}</div>`;
+            } else {
+                responseDiv.innerHTML = `<div class="error-message">${responseData.error}</div>`;
+            }        } catch (error) {
+            console.error('Error:', error);
+            const responseDiv = document.getElementById('role-update-response');
+            responseDiv.innerHTML = `<div class="error-message">An unexpected error occurred</div>`;
         }
     }
-
-    // Пример динамического рендера логов (можно сделать через API-запрос)
-    function renderLogs(logs) {
-        const logsTableBody = document.querySelector('#logs-table tbody');
-        logsTableBody.innerHTML = ''; // Очищаем текущие строки
-        logs.forEach(log => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                    <td>${log.id}</td>
-                    <td>${log.user_id}</td>
-                    <td>${log.method}</td>
-                    <td>${log.path}</td>
-                    <td>${log.status_code}</td>
-                    <td>${log.created_at}</td>
-                `;
-            logsTableBody.appendChild(row);
-        });
-    }
-
-    // Пример динамического рендера списка пользователей
-    function renderUsers(users) {
-        const usersTableBody = document.querySelector('#users-table tbody');
-        usersTableBody.innerHTML = ''; // Очищаем текущие строки
-        users.forEach(user => {
-            const roleText = getRoleText(user.role);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                    <td>${user.id}</td>
-                    <td>${user.email}</td>
-                    <td>${roleText}</td>
-                `;
-            usersTableBody.appendChild(row);
-        });
-    }
-
-    // Инициализация данных при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function () {
-        renderLogs(logs);  // Загружаем логи
-        renderUsers(users);  // Загружаем пользователей
+    document.addEventListener("htmx:configRequest", function(event) {
+        event.detail.headers['X-CSRF-Token'] = csrfToken;
+        const token = localStorage.getItem("token");
+        if (token) {
+            event.detail.headers['Authorization'] = token;
+        } else {
+            console.log('Token not found in localStorage');
+        }
     });
+
+    document.getElementById('main-btn').addEventListener('click', function (){
+        window.location.href = "/main";
+    });
+
 </script>
+
 
 </body>
 </html>

@@ -7,11 +7,13 @@ import (
 	"net/http"
 )
 
-func AppRoutes(e *echo.Echo, rg *echo.Group) {
+func AppRoutes(e *echo.Echo) {
 	e.GET("/login", RenderPage("login.html"))
 	e.GET("/main", RenderPage("main.html"))
 	e.GET("/password-change", RenderPage("password-change.html"))
 	e.GET("/password-reset", RenderPage("password-reset.html"))
+	e.GET("/admin-panel", RenderPage("admin-panel.html"))
+
 }
 
 func RenderPage(templateName string) echo.HandlerFunc {

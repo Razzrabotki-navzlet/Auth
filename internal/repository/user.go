@@ -86,7 +86,8 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 		}
 		var hashedPassword string
 		var userId int
-		err = db.QueryRow(context.Background(), CheckPasswordQuery, req.Email).Scan(&userId, &hashedPassword)
+		var role int
+		err = db.QueryRow(context.Background(), GetUserData, req.Email).Scan(&userId, &hashedPassword, &role)
 		if err == sql.ErrNoRows {
 			fmt.Println("No user found with email:", req.Email)
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
@@ -100,7 +101,7 @@ func LoginUser(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 		}
 
-		token, err := helpers.GenerateJWT(req.Email, userId) // Передаем userID в JWT
+		token, err := helpers.GenerateJWT(req.Email, userId, role)
 		if err != nil {
 			fmt.Println("Error generating JWT:", err)
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
@@ -131,43 +132,35 @@ func ChangePassword(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
 
-		// Получение данных из запроса (старый и новый пароль) (нужно убедиться что пользователь знает старый пароль)
 		var req ChangePasswordRequest
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 		}
 
-		// Проверка на то, что старый пароль действительно принадлежит пользователю
 		var oldPassword string
 		var Id int
-		err = db.QueryRow(context.Background(), CheckPasswordQuery, user.Email).Scan(&Id, &oldPassword)
+		var role int
+		err = db.QueryRow(context.Background(), GetUserData, user.Email).Scan(&Id, &oldPassword, &role)
 		if err == pgx.ErrNoRows {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid old password"})
 		} else if err != nil {
-			fmt.Println("ZZZZZZ")
-			fmt.Println(err)
-
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
 		}
 
-		// Сравнение нового пароля с хранимым в базе данных, чтоб не совпадал
 		if helpers.CheckPassword(req.NewPassword, oldPassword) {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "New password should not repeat old password"})
 		}
 
-		// Хэширование нового пароля
 		newHashedPassword, err := helpers.HashPassword(req.NewPassword)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to hash new password"})
 		}
 
-		// Обновление пароля в базе данных
 		_, err = db.Exec(context.Background(), UpdatePasswordQuery, newHashedPassword, user.Email)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update password"})
 		}
 
-		// Успешное обновление
 		return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 	}
 }
@@ -266,7 +259,7 @@ func SendResetPasswordLink(db *pgx.Conn) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
-		token, err := helpers.GenerateJWT(user.Email, user.ID)
+		token, err := helpers.GenerateJWT(user.Email, user.ID, int(user.Role))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate reset token"})
 		}
@@ -279,5 +272,59 @@ func SendResetPasswordLink(db *pgx.Conn) echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, map[string]string{"message": "Reset password link sent to your email"})
+	}
+}
+
+func GetUserList(dbConn *pgx.Conn) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		rows, err := dbConn.Query(context.Background(), GetUserListQuery)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch users"})
+		}
+		defer rows.Close()
+
+		var users []map[string]interface{}
+		for rows.Next() {
+			var id int
+			var name, email string
+			var role int
+			err := rows.Scan(&id, &name, &email, &role)
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to parse users"})
+			}
+
+			roleText := ""
+			switch role {
+			case 1:
+				roleText = "Admin"
+			case 2:
+				roleText = "Rater"
+			case 3:
+				roleText = "Watcher"
+			default:
+				roleText = "Unknown"
+			}
+
+			users = append(users, map[string]interface{}{
+				"id":    id,
+				"name":  name,
+				"email": email,
+				"role":  roleText,
+			})
+		}
+
+		// HTML response for htmx
+		htmlResponse := ""
+		for _, user := range users {
+			htmlResponse += fmt.Sprintf(`
+                <tr>
+                    <td>%d</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                    <td>%s</td>
+                </tr>`, user["id"], user["name"], user["email"], user["role"])
+		}
+
+		return c.HTML(http.StatusOK, htmlResponse)
 	}
 }

@@ -48,17 +48,10 @@ func UpdateUserRole(db *pgx.Conn) echo.HandlerFunc {
 		if err := c.Bind(&req); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 		}
-		// изменять роли могут только админы
-		//if user.Role == models.AdminRole {
 		_, err = db.Exec(context.Background(), UpdateRoleQuery, req.NewRole, req.UserId)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update role"})
 		}
-
 		return c.JSON(http.StatusOK, map[string]string{"message": "Role changed successfully"})
-		//} else {
-		//	return c.JSON(http.StatusBadRequest, map[string]string{"error": "You don't have permission to change role"})
-		//}
-
 	}
 }

@@ -7,8 +7,6 @@ import (
 )
 
 func RolesRoutes(dbConn *pgx.Conn, rg *echo.Group) {
-
 	rg.GET("/user-role", repository.GetUserRole(dbConn))
 	rg.PUT("/update-user-role", repository.UpdateUserRole(dbConn))
-
 }

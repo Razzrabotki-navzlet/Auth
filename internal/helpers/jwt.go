@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"auth/internal/models"
+	"auth/internal/repository"
 	"context"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
@@ -20,14 +21,16 @@ var jwtKey = []byte(JWTSalt)
 type Claims struct {
 	Email  string `json:"email"`
 	UserId int    `json:"userId"`
+	Role   int    `json:"role"`
 	jwt.StandardClaims
 }
 
-func GenerateJWT(email string, userId int) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour) // Токен будет действителен 24 часа
+func GenerateJWT(email string, userId int, role int) (string, error) {
+	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Email:  email,
 		UserId: userId,
+		Role:   role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 		},
@@ -84,12 +87,12 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
 		if len(token) > 7 && strings.HasPrefix(token, "Bearer ") {
-			token = token[7:] // Убираем "Bearer " из заголовка
+			token = token[7:]
 		} else {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token format"})
 		}
 
-		claims := &Claims{} // Предполагается, что структура Claims содержит user_id
+		claims := &Claims{}
 		tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(JWTSalt), nil
 		})
@@ -98,13 +101,12 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid token"})
 		}
 
-		// Извлечение user_id из claims и сохранение его в контексте Echo
-		userID := claims.UserId // Предполагается, что claims содержит поле UserID
+		userID := claims.UserId
 		if userID == 0 {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User ID not found in token"})
 		}
 
-		c.Set("user_id", userID) // Сохраняем user_id в контекст Echo
+		c.Set("user_id", userID)
 
 		return next(c)
 	}
@@ -142,7 +144,7 @@ func ConfirmEmail(db *pgx.Conn) echo.HandlerFunc {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid or expired token"})
 		}
 
-		_, err = db.Exec(context.Background(), "UPDATE users SET is_verified=true WHERE email=$1", claims.Email)
+		_, err = db.Exec(context.Background(), repository.UpdateVerifyQuery, claims.Email)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to activate user"})
 		}

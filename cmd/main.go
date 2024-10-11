@@ -64,7 +64,7 @@ func main() {
 	}))
 	rg := e.Group("/api")
 	rg.Use(echojwt.WithConfig(echojwt.Config{
-		SigningKey: []byte(helpers.JWTSalt), // Указываем ключ подписи
+		SigningKey: []byte(helpers.JWTSalt),
 	}))
 	rg.Use(helpers.JWTMiddleware)
 
@@ -84,8 +84,8 @@ func main() {
 	rg.Use(localMidleware.LogRequestMiddleware(conn))
 	routes.AuthRoutes(e, conn, rg)
 	routes.RolesRoutes(conn, rg)
-	routes.AppRoutes(e, rg)
-	routes.LogRoutes(conn, rg)
+	routes.AppRoutes(e)
+	routes.AdminRoutes(conn, rg)
 	e.Logger.Fatal(e.Start(":7070"))
 	defer conn.Close(context.Background())
 }
