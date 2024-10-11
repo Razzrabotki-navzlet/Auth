@@ -31,6 +31,17 @@ definitions:
         type: string
       password:
         type: string
+      passwordConfirm:
+        type: string
+    type: object
+  repository.ResetPasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        type: string
+      token:
+        type: string
     type: object
 host: localhost:7070
 info:
@@ -106,6 +117,8 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/repository.ChangePasswordRequest'
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -150,6 +163,68 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Информация о пользователе
+      tags:
+      - users
+  /api/user/reset-password:
+    put:
+      consumes:
+      - application/json
+      description: Сброс пароля происходит через токен в запросе (токен генерируется
+        в ссылке, которая отправляется на почту)
+      operationId: reset-password
+      parameters:
+      - description: New password with confirmation and reset token
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/repository.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Сброс пароля
+      tags:
+      - users
+  /api/user/send-reset-password-link:
+    get:
+      description: Почту пользователя получаем через токен
+      operationId: reset-password-link
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Отправка письма со сбросом пароля на почту
       tags:
       - users
   /auth/create-user:
